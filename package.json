@@ -1,0 +1,15 @@
+{
+  "name": "map-routes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web map for uploaded GPX and GeoJSON route layers.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  }
+}

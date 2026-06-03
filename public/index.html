@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Маршруты на карте</title>
+    <link rel="preconnect" href="https://tile.openstreetmap.org">
+    <link rel="preconnect" href="https://a.basemaps.cartocdn.com">
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/vendor/leaflet/leaflet.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar" aria-label="Панель слоев">
+        <section class="brand">
+          <div class="brand-title">
+            <h1>Velo Journal</h1>
+            <span id="currentUserName" class="current-user-name"></span>
+          </div>
+          <div class="user-menu-wrap">
+            <button id="userMenuButton" class="user-menu-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Меню пользователя">▾</button>
+            <div id="userMenu" class="user-menu" role="menu" hidden>
+              <div id="userList" class="user-menu-list"></div>
+              <button id="createUserButton" class="user-menu-action" type="button" role="menuitem">Создать пользователя</button>
+              <button id="renameUserButton" class="user-menu-action" type="button" role="menuitem">Переименовать</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="upload-card">
+          <form id="uploadForm" class="upload-form">
+            <label class="file-drop" for="routeFile">
+              <input id="routeFile" name="file" type="file" multiple accept=".gpx,.geojson,.json,application/gpx+xml,application/geo+json,application/json">
+              <span class="file-drop__title">Перетащите маршруты сюда</span>
+              <span id="fileName" class="file-drop__hint">или выберите GPX / GeoJSON</span>
+            </label>
+          </form>
+          <p id="status" class="status" role="status">Готово к загрузке маршрутов.</p>
+        </section>
+
+        <section class="layers-panel">
+          <div class="panel-heading">
+            <div class="panel-stat" title="Общая дистанция всех слоёв">
+              <strong id="totalDistance">0.0</strong>
+              <span>км</span>
+            </div>
+            <div class="panel-stat" title="Сумма времени езды">
+              <strong id="totalRideTime">00:00</strong>
+              <span>rH</span>
+            </div>
+            <div class="panel-stat" title="Сумма общего времени">
+              <strong id="totalTime">00:00</strong>
+              <span>tH</span>
+            </div>
+            <span id="routeCount" class="route-count">0</span>
+          </div>
+          <div id="groupsOverview" class="groups-overview" hidden></div>
+          <div id="layersList" class="layers-list"></div>
+          <p id="emptyState" class="empty-state">Пока слоёв нет. Добавьте GPX или GeoJSON файл, и маршрут появится здесь.</p>
+        </section>
+      </aside>
+
+      <section class="map-wrap" aria-label="Карта маршрутов">
+        <div class="map-toolbar">
+          <label class="basemap-switch">
+            <span>Подложка</span>
+            <select id="baseLayerSelect" aria-label="Подложка карты">
+              <option value="standard">Стандартная</option>
+              <option value="light">Светлая</option>
+              <option value="dark">Тёмная</option>
+            </select>
+          </label>
+          <button id="fitAllButton" class="ghost-button" type="button">Показать все</button>
+        </div>
+        <div id="map"></div>
+      </section>
+    </main>
+  </body>
+</html>
