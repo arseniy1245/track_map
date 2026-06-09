@@ -32,9 +32,9 @@
         <section class="upload-card">
           <form id="uploadForm" class="upload-form">
             <label class="file-drop" for="routeFile">
-              <input id="routeFile" name="file" type="file" multiple accept=".gpx,.geojson,.json,application/gpx+xml,application/geo+json,application/json">
+              <input id="routeFile" name="file" type="file" multiple accept=".gpx,.fit,.geojson,.json,application/gpx+xml,application/geo+json,application/json">
               <span class="file-drop__title">Перетащите маршруты сюда</span>
-              <span id="fileName" class="file-drop__hint">или выберите GPX / GeoJSON</span>
+              <span id="fileName" class="file-drop__hint">или выберите GPX / FIT / GeoJSON</span>
             </label>
           </form>
           <p id="status" class="status" role="status">Готово к загрузке маршрутов.</p>
@@ -58,7 +58,7 @@
           </div>
           <div id="groupsOverview" class="groups-overview" hidden></div>
           <div id="layersList" class="layers-list"></div>
-          <p id="emptyState" class="empty-state">Пока слоёв нет. Добавьте GPX или GeoJSON файл, и маршрут появится здесь.</p>
+          <p id="emptyState" class="empty-state">Пока слоёв нет. Добавьте GPX, FIT или GeoJSON файл, и маршрут появится здесь.</p>
         </section>
       </aside>
 

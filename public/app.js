@@ -303,6 +303,9 @@ function getRouteStyle(route, isSelected = false, isMuted = false) {
 
 function normalizeRouteStyle(route, forceDefault = false) {
   const weight = Number(route.weight);
+  const distanceKm = Number(route.distanceKm);
+  const ascentM = Number(route.ascentM);
+  const descentM = Number(route.descentM);
   const routeDate = normalizeRouteDate(route.routeDate, route.originalName);
 
   return {
@@ -314,6 +317,9 @@ function normalizeRouteStyle(route, forceDefault = false) {
     rideTime: route.rideTime || "",
     totalTime: route.totalTime || "",
     averageSpeed: route.averageSpeed || "",
+    distanceKm: Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : undefined,
+    ascentM: Number.isFinite(ascentM) && ascentM > 0 ? ascentM : undefined,
+    descentM: Number.isFinite(descentM) && descentM > 0 ? descentM : undefined,
     color: forceDefault ? DEFAULT_ROUTE_COLOR : route.color || DEFAULT_ROUTE_COLOR,
     weight: forceDefault
       ? DEFAULT_ROUTE_WEIGHT
@@ -606,7 +612,38 @@ function formatDistanceKm(distanceKm) {
     return "0.0";
   }
 
-  return distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm).toString();
+  return (Math.round(distanceKm * 10) / 10).toFixed(1);
+}
+
+function getRouteDistanceKm(route, fallbackDistanceKm = 0) {
+  const distanceKm = Number(route?.distanceKm);
+  return Number.isFinite(distanceKm) && distanceKm > 0
+    ? distanceKm
+    : fallbackDistanceKm;
+}
+
+function normalizeDistanceKm(value, fallbackDistanceKm = 0) {
+  const distanceKm = Number(String(value || "").replace(",", "."));
+  if (!Number.isFinite(distanceKm) || distanceKm < 0) {
+    return fallbackDistanceKm;
+  }
+
+  return Math.round(distanceKm * 10) / 10;
+}
+
+function normalizeElevationMeters(value) {
+  const meters = Number(String(value || "").replace(",", "."));
+  return Number.isFinite(meters) && meters > 0 ? Math.round(meters) : undefined;
+}
+
+function formatDistanceForInput(distanceKm) {
+  const normalizedDistance = normalizeDistanceKm(distanceKm, 0);
+  return normalizedDistance > 0 ? normalizedDistance.toString() : "";
+}
+
+function getAverageSpeedFromDistance(distanceKm, stats) {
+  const speedSeconds = Number(stats?.movingSeconds) || Number(stats?.totalSeconds) || 0;
+  return speedSeconds > 0 ? distanceKm / (speedSeconds / 3600) : 0;
 }
 
 function getGeoJsonTimeStats(geojson, distanceKm) {
@@ -742,6 +779,7 @@ function getRouteMetaValues(route, stats) {
 function updateLayerMetaText(card, route, stats) {
   const meta = getRouteMetaValues(route, stats);
   card.querySelector(".layer-date").textContent = meta.date;
+  card.querySelector(".distance-value").textContent = formatDistanceKm(getRouteDistanceKm(route, stats.distanceKm));
   card.querySelector(".layer-ride-time").textContent = `${meta.rideTime} rH`;
   card.querySelector(".layer-total-time").textContent = `${meta.totalTime} tH`;
   card.querySelector(".layer-average-speed").textContent = `${meta.averageSpeed} kmh`;
@@ -1159,6 +1197,7 @@ function buildLayerCard(route, stats) {
   const routeDate = normalizeRouteDate(route.routeDate, route.originalName);
   const displayName = route.originalName || "Маршрут";
   const meta = getRouteMetaValues(route, stats);
+  const displayDistanceKm = getRouteDistanceKm(route, stats.distanceKm);
   card.dataset.routeDate = routeDate;
   card.dataset.bikeGroup = String(getBikeGroupRank(route.bike));
   card.dataset.bikeName = route.bike || DEFAULT_BIKE;
@@ -1167,7 +1206,7 @@ function buildLayerCard(route, stats) {
     <div class="layer-main">
       <div class="layer-distance" title="Дистанция маршрута">
         <div class="distance-line">
-          <strong>${formatDistanceKm(stats.distanceKm)}</strong>
+          <strong class="distance-value">${formatDistanceKm(displayDistanceKm)}</strong>
           <span>км</span>
         </div>
       </div>
@@ -1204,16 +1243,24 @@ function buildLayerCard(route, stats) {
             <input class="menu-date-input" type="text" value="${escapeHtml(formatDateForInput(routeDate))}" inputmode="numeric" maxlength="10" placeholder="__.__.____">
           </label>
           <label class="menu-control">
+            Дистанция km
+            <input class="distance-input" type="text" inputmode="decimal" value="${escapeHtml(formatDistanceForInput(displayDistanceKm))}" placeholder="0.0">
+          </label>
+          <label class="menu-control">
+            Набор высоты m
+            <input class="ascent-input" type="text" inputmode="numeric" value="${escapeHtml(route.ascentM || "")}" placeholder="0">
+          </label>
+          <label class="menu-control">
+            Спуск m
+            <input class="descent-input" type="text" inputmode="numeric" value="${escapeHtml(route.descentM || "")}" placeholder="0">
+          </label>
+          <label class="menu-control">
             Время езды rH
             <input class="ride-time-input" type="text" value="${escapeHtml(route.rideTime || formatClockDuration(stats.movingSeconds))}" inputmode="numeric" maxlength="5" placeholder="00:00">
           </label>
           <label class="menu-control">
             Общее время tH
             <input class="total-time-input" type="text" value="${escapeHtml(route.totalTime || formatClockDuration(stats.totalSeconds))}" inputmode="numeric" maxlength="5" placeholder="00:00">
-          </label>
-          <label class="menu-control">
-            Средняя скорость kmh
-            <input class="average-speed-input" type="text" value="${escapeHtml(route.averageSpeed || formatSpeedValue(stats.averageSpeedKmh))}" placeholder="12.3">
           </label>
           <label class="menu-control">
             Цвет линии
@@ -1229,6 +1276,16 @@ function buildLayerCard(route, stats) {
               </span>
             </span>
           </label>
+          <label class="menu-control">
+            Средняя скорость kmh
+            <input class="average-speed-input" type="text" value="${escapeHtml(route.averageSpeed || formatSpeedValue(stats.averageSpeedKmh))}" placeholder="12.3">
+          </label>
+          ${route.description ? `
+            <label class="menu-control fit-summary-control">
+              Данные тренировки
+              <textarea class="fit-summary-input" readonly>${escapeHtml(route.description)}</textarea>
+            </label>
+          ` : ""}
           <button class="save-button" type="button">Сохранить</button>
           <button class="delete-button" type="button">Удалить слой</button>
         </div>
@@ -1243,6 +1300,10 @@ function buildLayerCard(route, stats) {
   const title = card.querySelector(".layer-title");
   const titleMenuInput = card.querySelector(".title-menu-input");
   const bikeInput = card.querySelector(".bike-input");
+  const distanceText = card.querySelector(".distance-value");
+  const distanceInput = card.querySelector(".distance-input");
+  const ascentInput = card.querySelector(".ascent-input");
+  const descentInput = card.querySelector(".descent-input");
   const dateText = card.querySelector(".layer-date");
   const menuDateInput = card.querySelector(".menu-date-input");
   const rideTimeInput = card.querySelector(".ride-time-input");
@@ -1320,6 +1381,20 @@ function buildLayerCard(route, stats) {
   bindClockMask(rideTimeInput);
   bindClockMask(totalTimeInput);
 
+  distanceInput.addEventListener("beforeinput", (event) => {
+    if (event.data && !/[\d.,]/.test(event.data)) {
+      event.preventDefault();
+    }
+  });
+
+  [ascentInput, descentInput].forEach((input) => {
+    input.addEventListener("beforeinput", (event) => {
+      if (event.data && /\D/.test(event.data)) {
+        event.preventDefault();
+      }
+    });
+  });
+
   menuDateInput.addEventListener("change", () => {
     const item = state.routes.get(route.id);
     if (!item) {
@@ -1327,6 +1402,54 @@ function buildLayerCard(route, stats) {
     }
 
     updateRouteDate(item.route, menuDateInput.value, dateText, menuDateInput, card, stats);
+  });
+
+  distanceInput.addEventListener("input", () => {
+    const item = state.routes.get(route.id);
+    if (!item) {
+      return;
+    }
+
+    const nextDistanceKm = normalizeDistanceKm(distanceInput.value, item.distanceKm || stats.distanceKm);
+    item.route.distanceKm = nextDistanceKm;
+    item.distanceKm = nextDistanceKm;
+    stats.distanceKm = nextDistanceKm;
+    stats.averageSpeedKmh = getAverageSpeedFromDistance(nextDistanceKm, stats);
+    distanceText.textContent = formatDistanceKm(nextDistanceKm);
+    if (!item.route.averageSpeed) {
+      averageSpeedInput.value = formatSpeedValue(stats.averageSpeedKmh);
+    }
+    updateLayerMetaText(card, item.route, stats);
+    refreshTotalDistance();
+    setStatus("Изменения готовы. Нажмите «Сохранить», чтобы записать их на сервер.");
+  });
+
+  distanceInput.addEventListener("change", () => {
+    const item = state.routes.get(route.id);
+    if (item) {
+      distanceInput.value = formatDistanceForInput(item.distanceKm);
+      sortLayerCards();
+    }
+  });
+
+  ascentInput.addEventListener("input", () => {
+    const item = state.routes.get(route.id);
+    if (!item) {
+      return;
+    }
+
+    item.route.ascentM = normalizeElevationMeters(ascentInput.value);
+    setStatus("Изменения готовы. Нажмите «Сохранить», чтобы записать их на сервер.");
+  });
+
+  descentInput.addEventListener("input", () => {
+    const item = state.routes.get(route.id);
+    if (!item) {
+      return;
+    }
+
+    item.route.descentM = normalizeElevationMeters(descentInput.value);
+    setStatus("Изменения готовы. Нажмите «Сохранить», чтобы записать их на сервер.");
   });
 
   rideTimeInput.addEventListener("input", () => {
@@ -1415,10 +1538,20 @@ function buildLayerCard(route, stats) {
       saveButton.disabled = true;
       const savedRoute = await sendRoutePatch(item.route, true);
       if (savedRoute) {
+        delete item.route.ascentM;
+        delete item.route.descentM;
         Object.assign(item.route, savedRoute);
+        item.distanceKm = getRouteDistanceKm(item.route, item.distanceKm);
+        stats.distanceKm = item.distanceKm;
+        distanceText.textContent = formatDistanceKm(item.distanceKm);
+        distanceInput.value = formatDistanceForInput(item.distanceKm);
+        ascentInput.value = item.route.ascentM || "";
+        descentInput.value = item.route.descentM || "";
         title.textContent = item.route.originalName;
         title.title = item.route.originalName;
         titleMenuInput.value = item.route.originalName;
+        refreshTotalDistance();
+        sortLayerCards();
       }
       menu.hidden = true;
       card.classList.remove("is-menu-open");
@@ -1727,10 +1860,12 @@ function refreshTotalDistance() {
 async function addRouteToMap(route, shouldFit = false) {
   route = normalizeRouteStyle(route);
   const geojson = await loadRouteGeometry(route);
-  const distanceKm = getGeoJsonDistanceKm(geojson);
+  const computedDistanceKm = getGeoJsonDistanceKm(geojson);
+  const distanceKm = getRouteDistanceKm(route, computedDistanceKm);
   const stats = {
     pointCount: getGeoJsonPointCount(geojson),
     distanceKm,
+    computedDistanceKm,
     ...getGeoJsonTimeStats(geojson, distanceKm)
   };
 
@@ -1803,7 +1938,10 @@ function getRoutePayload(route) {
     bike: route.bike,
     rideTime: route.rideTime,
     totalTime: route.totalTime,
-    averageSpeed: route.averageSpeed
+    averageSpeed: route.averageSpeed,
+    distanceKm: route.distanceKm,
+    ascentM: Number.isFinite(Number(route.ascentM)) ? route.ascentM : null,
+    descentM: Number.isFinite(Number(route.descentM)) ? route.descentM : null
   };
 }
 
@@ -1946,11 +2084,11 @@ async function loadSavedRoutes() {
 async function uploadFiles(files) {
   const routeFiles = Array.from(files || []).filter((file) => {
     const name = file.name.toLowerCase();
-    return name.endsWith(".gpx") || name.endsWith(".geojson") || name.endsWith(".json");
+    return name.endsWith(".gpx") || name.endsWith(".fit") || name.endsWith(".geojson") || name.endsWith(".json");
   });
 
   if (!routeFiles.length) {
-    setStatus("Выберите или перетащите GPX / GeoJSON файл.", true);
+    setStatus("Выберите или перетащите GPX / FIT / GeoJSON файл.", true);
     return;
   }
 
@@ -1979,7 +2117,7 @@ async function uploadFiles(files) {
     }
 
     elements.uploadForm.reset();
-    setFileNameHint("или выберите GPX / GeoJSON");
+    setFileNameHint("или выберите GPX / FIT / GeoJSON");
     setStatus(uploadedCount === 1 ? "Маршрут загружен и сохранён." : `Маршруты загружены и сохранены: ${uploadedCount}.`);
   } catch (error) {
     setStatus(error.message, true);
@@ -1992,7 +2130,7 @@ async function uploadFiles(files) {
 function bindEvents() {
   elements.routeFile.addEventListener("change", () => {
     const files = Array.from(elements.routeFile.files);
-    setFileNameHint(files.length > 1 ? `Выбрано файлов: ${files.length}` : files[0]?.name || "или выберите GPX / GeoJSON");
+    setFileNameHint(files.length > 1 ? `Выбрано файлов: ${files.length}` : files[0]?.name || "или выберите GPX / FIT / GeoJSON");
     uploadFiles(files);
   });
 
@@ -2009,7 +2147,7 @@ function bindEvents() {
     elements.fileDrop.classList.remove("is-dragging");
     setFileNameHint(event.dataTransfer.files.length > 1
       ? `Выбрано файлов: ${event.dataTransfer.files.length}`
-      : event.dataTransfer.files[0]?.name || "или выберите GPX / GeoJSON");
+      : event.dataTransfer.files[0]?.name || "или выберите GPX / FIT / GeoJSON");
     uploadFiles(event.dataTransfer.files);
   });
   elements.fitAllButton.addEventListener("click", fitAllRoutes);

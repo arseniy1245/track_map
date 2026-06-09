@@ -278,9 +278,26 @@ storage/users/<user-id>/routes.json
 storage/users/<user-id>/routes/*.gpx
 storage/users/<user-id>/routes/*.geojson
 storage/tile-cache/
+storage/logs/server.log
 ```
 
 Важно: `storage/` не нужно коммитить в git. Это реальные данные пользователей и маршрутов.
+
+## Логи приложения
+
+Сервер пишет JSON-логи в:
+
+```text
+storage/logs/server.log
+```
+
+Посмотреть последние события:
+
+```bash
+tail -f /opt/map-routes/storage/logs/server.log
+```
+
+В лог попадают запуск сервера, API-запросы, загрузки маршрутов, изменения слоёв, удаление маршрутов, создание и переименование пользователей.
 
 ## Резервная копия
 

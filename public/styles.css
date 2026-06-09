@@ -795,6 +795,15 @@ width: min(500px, calc(100vw - 24px));
   resize: vertical;
 }
 
+.fit-summary-control {
+  grid-column: 1 / -1;
+}
+
+.fit-summary-input {
+  min-height: 104px;
+  line-height: 1.35;
+}
+
 .menu-control input[type="color"] {
   width: 42px;
   height: 24px;
