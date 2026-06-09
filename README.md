@@ -34,7 +34,7 @@ PORT=8080 npm start
 Для установки зависимостей:
 
 ```bash
-chmod +x install.sh start-server.sh
+chmod +x install.sh start-server.sh stop-server.sh
 ./install.sh
 ```
 
@@ -44,10 +44,32 @@ chmod +x install.sh start-server.sh
 ./start-server.sh
 ```
 
+Скрипт запускает сервер в фоновом режиме через `nohup`, поэтому процесс продолжит работать после закрытия SSH-сессии.
+
 По умолчанию сервер запускается на порту `3000`. Другой порт:
 
 ```bash
 PORT=8080 ./start-server.sh
+```
+
+PID процесса сохраняется в:
+
+```text
+storage/map-routes.pid
+```
+
+Логи запуска:
+
+```text
+storage/logs/stdout.log
+storage/logs/stderr.log
+storage/logs/server.log
+```
+
+Остановить процесс, запущенный через `start-server.sh`:
+
+```bash
+./stop-server.sh
 ```
 
 ## Установка на пустой удаленный сервер
