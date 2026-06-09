@@ -181,6 +181,35 @@ function appendLog(level, message, meta = {}) {
     });
 }
 
+function appendLogSync(level, message, meta = {}) {
+  const entry = {
+    time: new Date().toISOString(),
+    level,
+    message,
+    ...sanitizeLogMeta(meta)
+  };
+
+  try {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+    fs.appendFileSync(LOG_PATH, `${JSON.stringify(entry)}\n`, "utf8");
+  } catch (error) {
+    console.error("Sync log write failed:", error.message);
+  }
+}
+
+function getErrorLogMeta(error) {
+  if (error instanceof Error) {
+    return {
+      error: error.message,
+      stack: error.stack
+    };
+  }
+
+  return {
+    error: String(error)
+  };
+}
+
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(status, {
@@ -1546,6 +1575,21 @@ async function handleRequest(req, res) {
   }
 }
 
+process.on("uncaughtException", (error) => {
+  appendLogSync("fatal", "uncaught_exception", getErrorLogMeta(error));
+  console.error(error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  appendLogSync("error", "unhandled_rejection", getErrorLogMeta(reason));
+  console.error(reason);
+});
+
+process.on("warning", (warning) => {
+  appendLog("warn", "process_warning", getErrorLogMeta(warning));
+});
+
 ensureStorage()
   .then(normalizeStoredGpxFileNames)
   .then(() => {
@@ -1557,6 +1601,7 @@ ensureStorage()
     });
   })
   .catch((error) => {
+    appendLogSync("fatal", "startup_failed", getErrorLogMeta(error));
     console.error(error);
     process.exitCode = 1;
   });
